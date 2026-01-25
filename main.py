@@ -3,6 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def read_greyhound_data(runner_name: str):
+    """
+    Fetches racing data for a given greyhound from The Greyhound Recorder website.
+
+    ### Parameters
+    - runner_name : str
+        - name of the runner
+
+    ### Returns
+    - output : pd.DataFrame | None
+        - DataFrame containing race data including 'Dist' and 'Time' columns, or None if data is insufficient
+    """
     MIN_RACES = 5
 
     formatted_name = runner_name.lower().replace(' ', '-').replace("'", "")
@@ -13,18 +24,35 @@ def read_greyhound_data(runner_name: str):
     tables = pd.read_html(url, storage_options=headers)
 
     for table in tables:
-        if 'Dist' in table.columns and 'Time' in table.columns:
+        if 'Dist' in table.columnds and 'Time' in table.columns:
             if len(table) < MIN_RACES:
                 print(f"WARNING: less than {MIN_RACES} found!")
             return table
     print(f"WARNING: no race data was found for {runner_name}!")
     return None
 
-def fit_normal_dist(data: pd.DataFrame, race_length: int):
+def fit_normal_dist(data: pd.DataFrame, race_length: int) -> tuple[float, float]:
+    """
+    Fits the race times for a given distance to a normal distribution.
+    """
+
     times = data[data['Dist'] == race_length]['Time']
     return times.mean(), times.std()
 
 def simulate(runner1: tuple[float, float], runner2: tuple[float, float], n_simulations: int = 10000) -> tuple[float, float]:
+    """
+    Simulates `n_simulations` races between two greyhounds based on their normal distribution parameters.
+
+    ### Parameters
+    - runner1 : tuple[float, float]
+        - mean and std of runner 1
+    - runner2 : tuple[float, float]
+        - mean and std of runner 2
+
+    ### Returns
+    - output : tuple[float, float]
+        - probability of runner 1 winning, probability of runner 2 winning
+    """
     runner1_mean, runner1_std = runner1
     runner2_mean, runner2_std = runner2
 
@@ -37,9 +65,12 @@ def simulate(runner1: tuple[float, float], runner2: tuple[float, float], n_simul
         else:
             wins['runner2'] += 1
 
-    return (wins['runner1'] / n_simulations, wins['runner2'] / n_simulations)
+    return wins['runner1'] / n_simulations, wins['runner2'] / n_simulations
 
 def get_user_input():
+    """
+    Prompts the user for input for runner names and distance
+    """
     runner1_name = input("Enter the name of the first greyhound: ")
     runner2_name = input("Enter the name of the second greyhound: ")
     race_length = int(input("Enter the race length (in meters): "))
