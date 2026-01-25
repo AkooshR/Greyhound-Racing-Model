@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def read_greyhound_data(runner_name: str, race_date) -> pd.DataFrame:
+def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFrame:
     """
     Fetches racing data for a given greyhound from The Greyhound Recorder website.
 
@@ -27,18 +27,18 @@ def read_greyhound_data(runner_name: str, race_date) -> pd.DataFrame:
         if 'Dist' in table.columns and 'Time' in table.columns:
             table['Date'] = (pd.to_datetime(table['Date'], format="%d/%m/%y").dt.strftime("%Y-%m-%d"))
             table = table[table['Date'] < race_date]
+            table = table[table['Dist'] == race_length]
             if len(table) < MIN_RACES:
                 print(f"WARNING: less than {MIN_RACES} found!")
             return table
     print(f"WARNING: no race data was found for {runner_name}!")
     return pd.DataFrame(None)
 
-def fit_normal_dist(data: pd.DataFrame, race_length: int) -> tuple[float, float]:
+def fit_normal_dist(data: pd.DataFrame) -> tuple[float, float]:
     """
     Fits the race times for a given distance to a normal distribution.
     """
-
-    times = data[data['Dist'] == race_length]['Time']
+    times = data['Time']
     return times.mean(), times.std()
 
 def simulate(runner1: tuple[float, float], runner2: tuple[float, float], n_simulations: int = 10000) -> tuple[float, float]:
@@ -104,15 +104,15 @@ def calculate_ev(fair_odds: float, offered_odds: float, commission: float = 0.08
 if __name__ == "__main__":
     runner1_name, runner2_name, race_length, race_date = get_user_input()
 
-    table1 = read_greyhound_data(runner1_name, race_date)
-    table2 = read_greyhound_data(runner2_name, race_date)
+    table1 = read_greyhound_data(runner1_name, race_length, race_date)
+    table2 = read_greyhound_data(runner2_name, race_length, race_date)
 
     if table1 is None or table2 is None:
         print("ERROR: Unable to retrieve data for one or both greyhounds.")
         exit(1)
     else:
-        runner1_params = fit_normal_dist(table1, race_length)
-        runner2_params = fit_normal_dist(table2, race_length)
+        runner1_params = fit_normal_dist(table1)
+        runner2_params = fit_normal_dist(table2)
 
         prob_runner1, prob_runner2 = simulate(runner1_params, runner2_params)
         fair_odds1 = 1 / prob_runner1 if prob_runner1 != 0 else None
