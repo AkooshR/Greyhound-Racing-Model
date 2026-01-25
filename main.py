@@ -76,8 +76,8 @@ def get_user_input():
     runner1_name = input("Enter the name of the first greyhound: ")
     runner2_name = input("Enter the name of the second greyhound: ")
     race_length = int(input("Enter the race length (in meters): "))
-
-    return runner1_name, runner2_name, race_length
+    race_date = input("Enter the race date (YYYY-MM-DD): ")
+    return runner1_name, runner2_name, race_length, race_date
 
 def calculate_ev(fair_odds: float, offered_odds: float, commission: float = 0.08) -> float:
     """
@@ -102,10 +102,10 @@ def calculate_ev(fair_odds: float, offered_odds: float, commission: float = 0.08
 
 
 if __name__ == "__main__":
-    runner1_name, runner2_name, race_length = get_user_input()
+    runner1_name, runner2_name, race_length, race_date = get_user_input()
 
-    table1 = read_greyhound_data(runner1_name)
-    table2 = read_greyhound_data(runner2_name)
+    table1 = read_greyhound_data(runner1_name, race_date)
+    table2 = read_greyhound_data(runner2_name, race_date)
 
     if table1 is None or table2 is None:
         print("ERROR: Unable to retrieve data for one or both greyhounds.")
