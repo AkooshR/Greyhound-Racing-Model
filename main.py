@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def read_greyhound_data(runner_name: str):
+def read_greyhound_data(runner_name: str) -> pd.DataFrame:
     """
     Fetches racing data for a given greyhound from The Greyhound Recorder website.
 
@@ -11,7 +11,7 @@ def read_greyhound_data(runner_name: str):
         - name of the runner
 
     ### Returns
-    - output : pd.DataFrame | None
+    - output : pd.DataFrame
         - DataFrame containing race data including 'Dist' and 'Time' columns, or None if data is insufficient
     """
     MIN_RACES = 5
@@ -29,7 +29,7 @@ def read_greyhound_data(runner_name: str):
                 print(f"WARNING: less than {MIN_RACES} found!")
             return table
     print(f"WARNING: no race data was found for {runner_name}!")
-    return None
+    return pd.DataFrame(None)
 
 def fit_normal_dist(data: pd.DataFrame, race_length: int) -> tuple[float, float]:
     """
