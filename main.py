@@ -77,6 +77,27 @@ def get_user_input():
 
     return runner1_name, runner2_name, race_length
 
+def calculate_ev(fair_odds: float, offered_odds: float, commission: float = 0.08) -> float:
+    """
+    Calculates the expected value of a bet.
+
+    ### Parameters
+    - fair_odds : float
+        - the fair odds of the outcome
+    - offered_odds : float
+        - the odds being offered by the bookmaker
+
+    ### Returns
+    - output : float
+        - expected value of the bet
+    """
+    if commission >= 1:
+        commission /= 100
+    
+    effective_offered_odds = (offered_odds - 1) * (1 - commission) + 1
+
+    return effective_offered_odds / fair_odds - 1
+
 
 if __name__ == "__main__":
     runner1_name, runner2_name, race_length = get_user_input()
