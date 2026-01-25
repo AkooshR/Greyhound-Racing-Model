@@ -42,7 +42,7 @@ def fit_normal_dist(data: pd.DataFrame) -> tuple[float, float]:
     times = data['Time']
     return times.mean(), times.std()
 
-def simulate(runner1: tuple[float, float], runner2: tuple[float, float], n_simulations: int = 10000) -> tuple[float, float]:
+def simulate(runner1: tuple[float, float], runner2: tuple[float, float], n_simulations: int = 100000) -> tuple[float, float]:
     """
     Simulates `n_simulations` races between two greyhounds based on their normal distribution parameters.
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     table1 = read_greyhound_data(runner1_name, race_length, race_date)
     table2 = read_greyhound_data(runner2_name, race_length, race_date)
 
-    if table1 is None or table2 is None:
+    if table1.shape[0] == 0 or table2.shape[0] == 0:
         print("ERROR: Unable to retrieve data for one or both greyhounds.")
         exit(1)
     else:
@@ -125,9 +125,10 @@ if __name__ == "__main__":
         print(f"\tFair odds    : {fair_odds1:.2f}")
         print(f"\tWin %        : {100*prob_runner1:.2f}")
         print(f"\tNo. samples  : {len(table1)}")
+        print(f"\tMean time    : {table1['Time'].mean():.2f} ")
 
         print(f"{runner2_name}:")
         print(f"\tFair odds    : {fair_odds2:.2f}")
         print(f"\tWin %        : {100*prob_runner2:.2f}")
         print(f"\tNo. samples  : {len(table2)}")
-        
+        print(f"\tMean time    : {table2['Time'].mean():.2f} ")
