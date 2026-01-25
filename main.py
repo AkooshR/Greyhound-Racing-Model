@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFrame:
     """
@@ -76,7 +77,7 @@ def get_user_input():
     runner1_name = input("Enter the name of the first greyhound: ")
     runner2_name = input("Enter the name of the second greyhound: ")
     race_length = int(input("Enter the race length (in meters): "))
-    race_date = input("Enter the race date (YYYY-MM-DD): ")
+    race_date = input("Enter the race date (YYYY-MM-DD) [default: today]: ").strip() or datetime.today().strftime("%Y-%m-%d")
     return runner1_name, runner2_name, race_length, race_date
 
 def calculate_ev(fair_odds: float, offered_odds: float, commission: float = 0.08) -> float:
