@@ -25,8 +25,8 @@ def read_greyhound_data(runner_name: str, race_date) -> pd.DataFrame:
 
     for table in tables:
         if 'Dist' in table.columns and 'Time' in table.columns:
-            table['Date'] = (pd.to_datetime(table['Date'], format="%d/%m/%y") .dt.strftime("%Y-%m-%d"))
-            table = table[table['Date']<race_date]
+            table['Date'] = (pd.to_datetime(table['Date'], format="%d/%m/%y").dt.strftime("%Y-%m-%d"))
+            table = table[table['Date'] < race_date]
             if len(table) < MIN_RACES:
                 print(f"WARNING: less than {MIN_RACES} found!")
             return table
