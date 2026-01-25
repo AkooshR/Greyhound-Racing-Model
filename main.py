@@ -24,7 +24,7 @@ def read_greyhound_data(runner_name: str):
     tables = pd.read_html(url, storage_options=headers)
 
     for table in tables:
-        if 'Dist' in table.columnds and 'Time' in table.columns:
+        if 'Dist' in table.columns and 'Time' in table.columns:
             if len(table) < MIN_RACES:
                 print(f"WARNING: less than {MIN_RACES} found!")
             return table
