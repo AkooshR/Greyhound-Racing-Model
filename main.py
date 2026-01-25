@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def read_greyhound_data(runner_name: str) -> pd.DataFrame:
+def read_greyhound_data(runner_name: str, race_date) -> pd.DataFrame:
     """
     Fetches racing data for a given greyhound from The Greyhound Recorder website.
 
@@ -25,6 +25,8 @@ def read_greyhound_data(runner_name: str) -> pd.DataFrame:
 
     for table in tables:
         if 'Dist' in table.columns and 'Time' in table.columns:
+            table['Date'] = (pd.to_datetime(table['Date'], format="%d/%m/%y") .dt.strftime("%Y-%m-%d"))
+            table = table[table['Date']<race_date]
             if len(table) < MIN_RACES:
                 print(f"WARNING: less than {MIN_RACES} found!")
             return table
@@ -120,11 +122,11 @@ if __name__ == "__main__":
 
         print(f"{runner1_name}:")
         print(f"\tFair odds    : {fair_odds1:.2f}")
-        print(f"\tWin %        : {prob_runner1:.2f}")
+        print(f"\tWin %        : {100*prob_runner1:.2f}")
         print(f"\tNo. samples  : {len(table1)}")
 
         print(f"{runner2_name}:")
         print(f"\tFair odds    : {fair_odds2:.2f}")
-        print(f"\tWin %        : {prob_runner2:.2f}")
+        print(f"\tWin %        : {100*prob_runner2:.2f}")
         print(f"\tNo. samples  : {len(table2)}")
         
