@@ -29,13 +29,13 @@ from typing import List, Optional, Tuple
 
 # Offered odds for each bet (decimal odds)
 offered_odds: List[float] = [
-    2, 2.3, 2.2, 2.76, 2.34, 1.88, 1.98, 2.35, 2.36, 1.9, 2.84, 1.7, 2.28
+    2, 2.3, 2.2, 2.76, 2.34, 1.88, 1.98, 2.34, 2.36, 1.87, 2.84, 1.7, 2.28, 2.3, 1.99, 1.89, 2.34
 ]
 
 # Observed outcomes: 'W' for win, 'L' for loss
 # Must be same length as offered_odds
 results: List[str] = [
-    "L", "W", "W", "L", "W", "W", "W", "W", "W", "W", "L", "W", "W"
+    "L", "W", "W", "L", "W", "W", "W", "W", "W", "W", "L", "W", "W", "L", "W", "W", "W"
 ]
 
 # OPTIONAL: stakes per bet. If None, stake = 1 for all bets.
