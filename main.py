@@ -108,7 +108,7 @@ if __name__ == "__main__":
     table1 = read_greyhound_data(runner1_name, race_length, race_date)
     table2 = read_greyhound_data(runner2_name, race_length, race_date)
 
-    if table1.shape[0] == 0 or table2.shape[0] == 0:
+    if table1.shape[0] in (0, 1) or table2.shape[0] in (0, 1):
         print("ERROR: Unable to retrieve data for one or both greyhounds.")
         exit(1)
     else:
