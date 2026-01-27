@@ -4,9 +4,9 @@ import datetime
 from dotenv import load_dotenv
 from pathlib import Path
 import os
-import json
-import time
 from zoneinfo import ZoneInfo
+import main as main
+import time
 
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
@@ -48,116 +48,122 @@ if not greyhound_event_type_id:
     raise SystemExit("Greyhound Racing event type not found.")
 
 # Get upcoming AvB markets
-# Only search for races up to 1 hour from now
-now_local = datetime.datetime.now(MELB)
-later_local = now_local + datetime.timedelta(hours=1)
-now_utc = now_local.astimezone(UTC)
-later_utc = later_local.astimezone(UTC)
+# Return all races today
+def get_next_races(market_type):
+    now_local = datetime.datetime.now(MELB)
+    midnight_local = now_local.replace(hour=23, minute=59, second=59)
+    now_utc = now_local.astimezone(UTC)
+    midnight_utc = midnight_local.astimezone(UTC)
 
-market_catalogue = trading.betting.list_market_catalogue(
-    filter=filters.market_filter(
-        event_type_ids=[greyhound_event_type_id],
-        market_type_codes=["WIN"],
-        market_start_time={"from": iso_z(now_utc), "to": iso_z(later_utc)},
-    ),
-    market_projection=["RUNNER_DESCRIPTION", "EVENT", "MARKET_START_TIME"],
-    max_results=5, 
-)
+    market_catalogue = trading.betting.list_market_catalogue(
+        filter=filters.market_filter(
+            event_type_ids=[greyhound_event_type_id],
+            #country_codes=["AU"],
+            market_type_codes=[market_type],
+            market_start_time={"from": iso_z(now_utc), "to": iso_z(midnight_utc)},
+        ),
+        market_projection=["RUNNER_DESCRIPTION", "EVENT", "MARKET_START_TIME"],
+        max_results=1000, 
+    )
 
-if not market_catalogue:
-    trading.logout()
-    raise SystemExit("No upcoming greyhound AvB markets found in the time window.")
+    if not market_catalogue:
+        print("Tried to find requested AvB markets but failed.")
 
-first_market = market_catalogue[0]
-market_id = first_market.market_id
-event_name = first_market.event.name if first_market.event else "Unknown Event"
-start_local = to_melbourne(first_market.market_start_time)
-
-# Map selectionId to runner name
-runner_name = {r.selection_id: r.runner_name for r in (first_market.runners or [])}
-
-print(f"\nFound a market! Tracking...")
-print(f"\tMarket ID: {market_id}")
-print(f"\tEvent:     {event_name}")
-print(f"\tStart:     {start_local.strftime('%Y-%m-%d %H:%M:%S %Z')} (Melbourne)\n")
+    return market_catalogue
 
 
-# map runner to prices (avg of back and lay) every second
-prices = {}
-
-def overround(book: list) -> float:
-    overround = 0.0
-    for price in book:
-        overround += 1.0 / price
-    return overround
-
-# poll market
-POLL_SECONDS = 1.0
-
-try:
-    while True:
-        books = trading.betting.list_market_book(
+def get_runner_names(market_id, runner_name, market_name):
+    # Only process MATCH_BET markets
+    if " v " not in market_name:
+        return []
+    
+    books = trading.betting.list_market_book(
             market_ids=[market_id],
             price_projection=filters.price_projection(price_data=["EX_BEST_OFFERS"]),
         )
 
-        if not books:
-            print("No market book returned. Is the market requested available?")
-            time.sleep(POLL_SECONDS)
-            continue
+    runner_names = []
+    if not books:
+        print("No market book returned. Is the market requested available?")
+        return []
+    
+    for r in books[0].runners:
+        name = runner_name.get(r.selection_id, str(r.selection_id))
+        runner_names.append(name)
 
-        book = books[0]
-        tstamp = datetime.datetime.now(MELB).strftime("%Y-%m-%d %H:%M:%S %Z")
-        time_to_jump = start_local - datetime.datetime.now(MELB)
+    return runner_names
 
-        print(f"\n{str(time_to_jump).split('.')[0]} to jump | {book.status} (In play: {book.inplay})")
+def get_distance(race, win_catalogue):
+    event_name = race.event.name if race.event else "Unknown Event"
+    event_start = to_melbourne(race.market_start_time) 
 
-        # If the market is closed, you can break
-        if book.status in ("CLOSED", "SETTLED"):
-            print("Market closed/settled. Stopping.")
-            break
+    for win_race in win_catalogue:
+        if win_race.event.name == event_name \
+          and to_melbourne(win_race.market_start_time) == event_start:
+            return str(win_race.market_name).split()[1]
+    
+    print(f"Distance for requested race not found!")
+    return ""
 
-        # Print best back/lay for each runner
-        lay_book = []
-        lpm = {}
-        for r in book.runners:
-            name = runner_name.get(r.selection_id, str(r.selection_id))
+market_catalogue = get_next_races("MATCH_BET")
+win_catalogue = get_next_races("WIN")
+for race in market_catalogue:
+    market_id = race.market_id
+    event_name = race.event.name if race.event else "Unknown Event"
+    start_local = to_melbourne(race.market_start_time)
 
-            atb = r.ex.available_to_back
-            atl = r.ex.available_to_lay
-            lpm[name] = r.get("lastPriceTraded") if r.get("lastPriceTraded") else None
+    # Map selectionId to runner name
+    runner_name = {r.selection_id: r.runner_name for r in (race.runners or [])}
+    race_length = int(get_distance(race, win_catalogue)[0:-1])
+    race_date = start_local.strftime('%Y-%m-%d')
 
-            best_back = atb[0].price if atb else None
-            best_lay = atl[0].price if atl else None
+    print(f"\n\n\n\n========================")
 
-            print(f"{name:22s}  Back={best_back!s:>6}  Lay={best_lay!s:>6}  LPM={lpm[name]!s:>6}")
-            lay_book.append(best_lay if best_lay else float('inf'))
+    print(f"\nFound a market! Tracking...")
+    print(f"\tMarket ID:  {market_id}")
+    print(f"\tEvent:      {event_name}")
+    print(f"\tStart:      {start_local.strftime('%Y-%m-%d %H:%M:%S %Z')} (Melbourne)")
+    print(f"\tDistance:   {race_length}m")
 
-        ornd = overround(lay_book)
-        print(f"Lay efficiency: {ornd:.4f}")
-        if ornd < 0.88:
-            print("WARNING: Prices may be unreliable.")
-        
-        # store last price matched
-        if lpm:
-            for name in lpm:
-                if name not in prices:
-                    prices[name] = []
-                if lpm[name] is not None:
-                    prices[name].append(lpm[name])
+    runner_names = get_runner_names(market_id, runner_name, race.market_name)
+    formatted_names = []
 
-        time.sleep(POLL_SECONDS)
+    for name in runner_names:
+        print(f"{name:22s}")
+        formatted_names.append(name.split('.')[1].strip())
 
-except KeyboardInterrupt:
-    print("\nStopped by user (Ctrl+C).")
-    print("Final prices collected:")
-    for runner, price_list in prices.items():
-        print(f"{runner:22s}  Prices: {', '.join(f'{p:.2f}' for p in price_list)}")
-        
+    runner1_name = formatted_names[0]
+    runner2_name = formatted_names[1]
 
-finally:
-    trading.logout()
-    print("Logged out.")
-    print("Final prices collected:")
-    for runner, price_list in prices.items():
-        print(f"{runner:22s}  Prices: {', '.join(f'{p:.2f}' for p in price_list)}")
+    table1 = main.read_greyhound_data(runner1_name, race_length, race_date)
+    table2 = main.read_greyhound_data(runner2_name, race_length, race_date)
+
+    if table1.shape[0] in (0, 1) or table2.shape[0] in (0, 1):
+        print("ERROR: Unable to retrieve data for one or both greyhounds.")
+    else:
+        runner1_params = main.fit_normal_dist(table1)
+        runner2_params = main.fit_normal_dist(table2)
+
+        prob_runner1, prob_runner2 = main.simulate(runner1_params, runner2_params)
+        fair_odds1 = 1 / prob_runner1 if prob_runner1 != 0 else None
+        fair_odds2 = 1 / prob_runner2 if prob_runner2 != 0 else None
+
+        print(f"\n-----RESULTS-----")
+
+        print(f"{runner1_name}:")
+        print(f"\tFair odds    : {fair_odds1:.2f}")
+        print(f"\tWin %        : {100*prob_runner1:.2f}")
+        print(f"\tNo. samples  : {len(table1)}")
+        print(f"\tMean time    : {table1['Time'].mean():.2f} ")
+
+        print(f"{runner2_name}:")
+        print(f"\tFair odds    : {fair_odds2:.2f}")
+        print(f"\tWin %        : {100*prob_runner2:.2f}")
+        print(f"\tNo. samples  : {len(table2)}")
+        print(f"\tMean time    : {table2['Time'].mean():.2f} ")
+
+    time.sleep(1)
+
+print("All done! Logging out...")
+trading.logout()
+exit(0)
