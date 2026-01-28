@@ -8,23 +8,18 @@ from zoneinfo import ZoneInfo
 import main as main
 import time
 
+# BETFAIR ACCOUNT DETAILS
+#
+# Create a file '.env' and copy the template below:
+# BETFAIR_USERNAME = 
+# BETFAIR_PASSWORD = 
+# BETFAIR_API_KEY = 
+
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 BETFAIR_USERNAME = str(os.getenv("BETFAIR_USERNAME"))
 BETFAIR_PASSWORD = str(os.getenv("BETFAIR_PASSWORD"))
 BETFAIR_API_KEY = str(os.getenv("BETFAIR_API_KEY"))
-
-# Set timezone to Melbourne, Australia
-MELB = ZoneInfo("Australia/Melbourne")
-UTC = datetime.timezone.utc
-
-def iso_z(dt_aware_utc: datetime.datetime) -> str:
-    return dt_aware_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-def to_melbourne(dt) -> datetime.datetime:
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=UTC)
-    return dt.astimezone(MELB)
 
 # Access Betfair API
 trading = betfairlightweight.APIClient(
@@ -33,6 +28,28 @@ trading = betfairlightweight.APIClient(
     app_key=BETFAIR_API_KEY
 )
 trading.login_interactive()
+
+# Helper functions for moving between Melbourne time and UTC time
+MELB = ZoneInfo("Australia/Melbourne")
+UTC = datetime.timezone.utc
+
+def iso_z(dt_aware_utc: datetime.datetime) -> str:
+    """
+    Formats a UTC datetime object into a formatted string (ISO 8601).
+    """
+    return dt_aware_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+def to_melbourne(dt) -> datetime.datetime:
+    """
+    Converts timezone-aware datetime objects into Melbourne time.
+
+    Assumes UTC if input is timezone-naive.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(MELB)
+
+
 
 # Find the event type ID for Greyhound Racing
 event_types = trading.betting.list_event_types(filter=filters.market_filter())
@@ -50,15 +67,23 @@ if not greyhound_event_type_id:
 # Get upcoming AvB markets
 # Return all races today
 def get_next_races(market_type):
+    """
+    Searches for races of the requested `market_type` from now until midnight same day.
+
+    :param str market_type: e.g. "WIN" or "MATCH_BET" (AvB)
+
+    :returns out: dict
+    """
+    # Search until midnight same day
     now_local = datetime.datetime.now(MELB)
     midnight_local = now_local.replace(hour=23, minute=59, second=59)
     now_utc = now_local.astimezone(UTC)
     midnight_utc = midnight_local.astimezone(UTC)
 
+    # Returns a dict of all requested `market_type` markets
     market_catalogue = trading.betting.list_market_catalogue(
         filter=filters.market_filter(
             event_type_ids=[greyhound_event_type_id],
-            #country_codes=["AU"],
             market_type_codes=[market_type],
             market_start_time={"from": iso_z(now_utc), "to": iso_z(midnight_utc)},
         ),
@@ -72,10 +97,13 @@ def get_next_races(market_type):
     return market_catalogue
 
 
-def get_runner_names(market_id, runner_name, market_name):
-    # Only process MATCH_BET markets
-    if " v " not in market_name:
-        return []
+def get_runner_names(market_id, runner_name):
+    """
+    Returns a list of runner names in `market_id`.
+
+    :param str market_id: market id of the AvB market
+    :param dict runner_name: a map of runner selection ids to their names as a string
+    """
     
     books = trading.betting.list_market_book(
             market_ids=[market_id],
@@ -94,6 +122,9 @@ def get_runner_names(market_id, runner_name, market_name):
     return runner_names
 
 def get_distance(race, win_catalogue):
+    """
+    Finds the same race in the `WIN` market by matching, then returns the distance (e.g. "300m")
+    """
     event_name = race.event.name if race.event else "Unknown Event"
     event_start = to_melbourne(race.market_start_time) 
 
@@ -106,7 +137,8 @@ def get_distance(race, win_catalogue):
     return ""
 
 market_catalogue = get_next_races("MATCH_BET")
-win_catalogue = get_next_races("WIN")
+win_catalogue = get_next_races("WIN") # only needed to find distances of races
+
 for race in market_catalogue:
     market_id = race.market_id
     event_name = race.event.name if race.event else "Unknown Event"
@@ -125,7 +157,7 @@ for race in market_catalogue:
     print(f"\tStart:      {start_local.strftime('%Y-%m-%d %H:%M:%S %Z')} (Melbourne)")
     print(f"\tDistance:   {race_length}m")
 
-    runner_names = get_runner_names(market_id, runner_name, race.market_name)
+    runner_names = get_runner_names(market_id, runner_name)
     formatted_names = []
 
     for name in runner_names:
@@ -135,32 +167,7 @@ for race in market_catalogue:
     runner1_name = formatted_names[0]
     runner2_name = formatted_names[1]
 
-    table1 = main.read_greyhound_data(runner1_name, race_length, race_date).dropna(subset='Time')
-    table2 = main.read_greyhound_data(runner2_name, race_length, race_date).dropna(subset='Time')
-
-    if table1.shape[0] in (0, 1) or table2.shape[0] in (0, 1):
-        print("ERROR: Unable to retrieve data for one or both greyhounds.")
-    else:
-        runner1_params = main.fit_normal_dist(table1)
-        runner2_params = main.fit_normal_dist(table2)
-
-        prob_runner1, prob_runner2 = main.simulate(runner1_params, runner2_params)
-        fair_odds1 = 1 / prob_runner1 if prob_runner1 != 0 else None
-        fair_odds2 = 1 / prob_runner2 if prob_runner2 != 0 else None
-
-        print(f"\n-----RESULTS-----")
-
-        print(f"{runner1_name}:")
-        print(f"\tFair odds    : {fair_odds1:.2f}")
-        print(f"\tWin %        : {100*prob_runner1:.2f}")
-        print(f"\tNo. samples  : {len(table1)}")
-        print(f"\tMean time    : {table1['Time'].mean():.2f} ")
-
-        print(f"{runner2_name}:")
-        print(f"\tFair odds    : {fair_odds2:.2f}")
-        print(f"\tWin %        : {100*prob_runner2:.2f}")
-        print(f"\tNo. samples  : {len(table2)}")
-        print(f"\tMean time    : {table2['Time'].mean():.2f} ")
+    main.print_runner_analysis(runner1_name, runner2_name, race_length, race_date)
 
     time.sleep(1)
 

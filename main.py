@@ -101,10 +101,16 @@ def calculate_ev(fair_odds: float, offered_odds: float, commission: float = 0.08
 
     return effective_offered_odds / fair_odds - 1
 
-
-if __name__ == "__main__":
-    runner1_name, runner2_name, race_length, race_date = get_user_input()
-
+def print_runner_analysis(runner1_name, runner2_name, race_length, race_date):
+    """
+    Void function that prints out the model's predicted fair odds and win %, as well as
+    the number of samples and mean time for each runner.
+    
+    :param runner1_name: Description
+    :param runner2_name: Description
+    :param race_length: Description
+    :param race_date: Description
+    """
     table1 = read_greyhound_data(runner1_name, race_length, race_date)
     table2 = read_greyhound_data(runner2_name, race_length, race_date)
 
@@ -132,3 +138,8 @@ if __name__ == "__main__":
         print(f"\tWin %        : {100*prob_runner2:.2f}")
         print(f"\tNo. samples  : {len(table2)}")
         print(f"\tMean time    : {table2['Time'].mean():.2f} ")
+
+if __name__ == "__main__":
+    runner1_name, runner2_name, race_length, race_date = get_user_input()
+
+    print_runner_analysis(runner1_name, runner2_name, race_length, race_date)

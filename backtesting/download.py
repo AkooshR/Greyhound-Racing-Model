@@ -8,9 +8,9 @@ from pathlib import Path
 
 #Loads .env file into the environment. Assigns variables for each of the login details, and then logs into your betfair API.
 load_dotenv()
-KEY = os.getenv('BETFAIR_API_KEY')
-USERNAME = os.getenv('BETFAIR_USERNAME')
-PASSWORD = os.getenv('BETFAIR_PASSWORD')
+KEY = str(os.getenv('BETFAIR_API_KEY'))
+USERNAME = str(os.getenv('BETFAIR_USERNAME'))
+PASSWORD = str(os.getenv('BETFAIR_PASSWORD'))
 trading = betfairlightweight.APIClient(USERNAME, PASSWORD, KEY)
 trading.login_interactive()
 

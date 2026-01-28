@@ -38,6 +38,10 @@ def betting_p_value(
 ) -> float:
     """
     Returns one-sided p-value for positive edge using known p_i = 1 / odds.
+
+    :param list offered_odds: the given odds that you backed at
+    :param list results: the outcomes for the bets
+    :param float commission: the relevant commission on betfair (default = 0.08)
     """
 
     if len(offered_odds) != len(results):
