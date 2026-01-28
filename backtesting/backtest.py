@@ -37,15 +37,12 @@ def read_file(filepath,number_of_lines):
                 runner_name = json.loads(line)['mc'][0]['marketDefinition']['runners'][i]['name'].split('.')[1].strip()
                 runner_status = json.loads(line)['mc'][0]['marketDefinition']['runners'][i]['status']
                 runner_names[runner_name] = [runner_id,runner_status]
-        elif line_number == 1:
-            print(json.loads(line)['mc'][0]['marketDefinition'])
     return runner_names, runner_odds_dict
 
 for filepath in Path("backtestdata").iterdir():
     number_of_lines = count_lines(filepath)
     runner_names, runner_odds_dict = read_file(filepath,number_of_lines)
-    print(runner_names)
-    print(runner_odds_dict)
     for runner in runner_names.keys():
         odds_list = runner_odds_dict[runner_names[runner][0]]
         mean_back = sum(odds_list)/len(odds_list)
+        print(f'{runner} Back Odds: {mean_back}')
