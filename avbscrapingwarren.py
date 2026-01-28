@@ -1,6 +1,6 @@
 import betfairlightweight
-import os
-import pandas as pd
+from betfairlightweight import filters
+import datetime
 from dotenv import load_dotenv
 from pathlib import Path
 import os
@@ -8,12 +8,30 @@ from zoneinfo import ZoneInfo
 import main as main
 import time
 
-#Loads .env file into the environment. Assigns variables for each of the login details, and then logs into your betfair API.
-load_dotenv()
-KEY = os.getenv('BETFAIR_API_KEY')
-USERNAME = os.getenv('BETFAIR_USERNAME')
-PASSWORD = os.getenv('BETFAIR_PASSWORD')
-trading = betfairlightweight.APIClient(USERNAME, PASSWORD, KEY)
+load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
+
+BETFAIR_USERNAME = str(os.getenv("BETFAIR_USERNAME"))
+BETFAIR_PASSWORD = str(os.getenv("BETFAIR_PASSWORD"))
+BETFAIR_API_KEY = str(os.getenv("BETFAIR_API_KEY"))
+
+# Set timezone to Melbourne, Australia
+MELB = ZoneInfo("Australia/Melbourne")
+UTC = datetime.timezone.utc
+
+def iso_z(dt_aware_utc: datetime.datetime) -> str:
+    return dt_aware_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+def to_melbourne(dt) -> datetime.datetime:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(MELB)
+
+# Access Betfair API
+trading = betfairlightweight.APIClient(
+    username=BETFAIR_USERNAME,
+    password=BETFAIR_PASSWORD,
+    app_key=BETFAIR_API_KEY
+)
 trading.login_interactive()
 
 # Find the event type ID for Greyhound Racing
@@ -117,8 +135,8 @@ for race in market_catalogue:
     runner1_name = formatted_names[0]
     runner2_name = formatted_names[1]
 
-    table1 = main.read_greyhound_data(runner1_name, race_length, race_date)
-    table2 = main.read_greyhound_data(runner2_name, race_length, race_date)
+    table1 = main.read_greyhound_data(runner1_name, race_length, race_date).dropna(subset='Time')
+    table2 = main.read_greyhound_data(runner2_name, race_length, race_date).dropna(subset='Time')
 
     if table1.shape[0] in (0, 1) or table2.shape[0] in (0, 1):
         print("ERROR: Unable to retrieve data for one or both greyhounds.")
