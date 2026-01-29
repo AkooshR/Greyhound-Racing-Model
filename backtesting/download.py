@@ -65,3 +65,4 @@ for file in win_list:
         runner_list.append(runner['name'].split('.')[1].strip())
     race_length = line1['mc'][0]['marketDefinition']['name'].split()[1]
     print(date,eventid,runner_list,race_length)
+    os.remove(Path(f'winmarket/{file.split('/')[8]}'))
