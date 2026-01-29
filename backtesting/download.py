@@ -16,7 +16,7 @@ PASSWORD = str(os.getenv('BETFAIR_PASSWORD'))
 trading = betfairlightweight.APIClient(USERNAME, PASSWORD, KEY)
 trading.login_interactive()
 
-MAX_RETRIES = 3
+MAX_RETRIES = 6
 
 #Getting all the available historic data in May 2020, and filtering for AvB markets (MATCH_BET). Outputs the file pathways for each AvB market!
 #the for loop then checks if a file has already been downloaded. if not, it attempts to download it.
@@ -46,6 +46,8 @@ if input("Continue to download AvB files (type 'q'): ") == 'q':
                     print(f"Failed to download {file} after {MAX_RETRIES} attempts")
                 continue
 
+time_curve = [0.5, 1, 2.5, 5.5, 9, 15]
+
 if input("Continue to generate win markets json file (type 'q'): ") == 'q':
     win_list = trading.historic.get_file_list(
         sport='Greyhound Racing',
@@ -66,7 +68,17 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         for attempt in range(MAX_RETRIES):
             try:
                 trading.historic.download_file(file,"winmarket")
-                time.sleep(attempt + 1)
+                time.sleep(time_curve[attempt])
+                
+                # Verify the downloaded file is actually a valid bz2 file
+                file_path = Path(f'winmarket/{file.split('/')[8]}')
+                with open(file_path, 'rb') as f:
+                    magic = f.read(2)
+                    if magic != b'BZ':
+                        # Not a valid bz2 file, probably HTML error page
+                        os.remove(file_path)
+                        raise ValueError(f"Downloaded file is not valid bz2 (got {magic}), likely HTML error page")
+                
                 break # Success, exit retry loop
             except Exception as e:
                 if attempt < MAX_RETRIES - 1:
