@@ -36,7 +36,7 @@ if input("Continue to download AvB files (type 'q'): ") == 'q':
     for file in AvB_list:
         for attempt in range(MAX_RETRIES):
             try:
-                if not Path(f'backtestdata/{file.split('/')[8]}').exists():
+                if not Path(f"backtestdata/{file.split('/')[8]}").exists():
                     trading.historic.download_file(file,"backtestdata")
                 break  # Success, exit retry loop
             except Exception as e:
