@@ -74,14 +74,12 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
                     print(f"Failed to download {file} after {MAX_RETRIES} attempts")
                 continue
         
-
-        
-        # continues if file failed to download
-        if not Path(f'winmarket/{file.split('/')[8]}').exists():
-            continue
-
         # the following code only runs if the file was successfully downloaded
         try:
+            # continues if file failed to download
+            if not Path(f'winmarket/{file.split('/')[8]}').exists():
+                continue
+
             line1 = json.loads(next(bz2.open(Path(f'winmarket/{file.split('/')[8]}'), "rt")))
             date = line1['mc'][0]['marketDefinition']['marketTime'][:10]
             eventid = line1['mc'][0]['marketDefinition']['eventId']
@@ -95,5 +93,9 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         except:
             print(f"Error processing file: winmarket/{file.split('/')[8]}")
             continue
-        
-    json.dump(json_upload,open(JSON_PATH,'w'),indent=4)
+
+    try:
+        json.dump(json_upload,open(JSON_PATH,'w'),indent=4)
+    except:
+        print("Error writing JSON file")
+        print(json_upload)
