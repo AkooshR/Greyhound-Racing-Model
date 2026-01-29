@@ -58,9 +58,9 @@ def read_file(filepath,number_of_lines):
 
         line_number += 1
                 
-    return runner_details, runner_odds_dict, date, commission, eventid
+    return runner_details, runner_odds_dict, date, commission,eventid
 
-JSON_PATH = 'win_markets_may.json'
+JSON_PATH = 'backtesting/win_markets_may.json'
 for filepath in Path("backtestdata").iterdir():
     number_of_lines = count_lines(filepath)
     runner_details, runner_odds_dict, date, commission, eventid = read_file(filepath,number_of_lines)
@@ -76,7 +76,8 @@ for filepath in Path("backtestdata").iterdir():
     json_file = json.load(open(JSON_PATH,'r'))
     for race in json_file[eventid]:
         date_matches = race[0] == date
-        runner_matches = list(runner_details.keys())[0] in race[2] and list(runner_details.keys())[1] in race[2]
-        if date_matches and runner_matches:
+        runners_match = list(runner_details.keys())[0] in race[2] and list(runner_details.keys())[1] in race[2]
+        if date_matches and runners_match:
             distance = int(race[1][:-1])
+            print(f'race found, distance is {distance}')
             break
