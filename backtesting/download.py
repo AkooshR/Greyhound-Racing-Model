@@ -6,6 +6,7 @@ import json
 import pandas as pd
 from dotenv import load_dotenv
 from pathlib import Path
+from tqdm import tqdm
 
 #Loads .env file into the environment. Assigns variables for each of the login details, and then logs into your betfair API.
 load_dotenv()
@@ -59,13 +60,13 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
     )
     json_upload = {}
     JSON_PATH = 'win_markets_may.json'
-    for file in win_list:
+    for file in tqdm(win_list, desc="Processing WIN markets"):
 
         # this block attempts to download file
         for attempt in range(MAX_RETRIES):
             try:
                 trading.historic.download_file(file,"winmarket")
-                time.sleep(2)
+                time.sleep(attempt + 1)
                 break # Success, exit retry loop
             except Exception as e:
                 if attempt < MAX_RETRIES - 1:
@@ -89,7 +90,7 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
             race_length = line1['mc'][0]['marketDefinition']['name'].split()[1]
             os.remove(Path(f'winmarket/{file.split('/')[8]}'))
             json_upload.setdefault(eventid, []).append([date, race_length, runner_list])
-            print(f"Processed file: winmarket/{file.split('/')[8]}")
+            print(f"\nProcessed file: winmarket/{file.split('/')[8]}")
         except:
             print(f"Error processing file: winmarket/{file.split('/')[8]}")
             continue
