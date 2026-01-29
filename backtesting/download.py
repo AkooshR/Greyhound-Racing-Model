@@ -48,6 +48,7 @@ if input("Continue to download AvB files (type 'q'): ") == 'q':
 
 time_curve = [0.5, 1, 2.5, 5.5, 9, 15]
 
+JSON_PATH = 'backtesting/win_markets_may.json'
 if input("Continue to generate win markets json file (type 'q'): ") == 'q':
     win_list = trading.historic.get_file_list(
         sport='Greyhound Racing',
@@ -61,7 +62,6 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         market_types_collection='WIN'
     )
     json_upload = {}
-    JSON_PATH = 'win_markets_may.json'
     for file in tqdm(win_list, desc="Processing WIN markets"):
 
         # this block attempts to download file
@@ -91,12 +91,12 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
                     print(f"\nFailed to download {file} after {MAX_RETRIES} attempts")
                 continue
         
-        # the following code only runs if the file was successfully downloaded
+        
         try:
             # continues if file failed to download
             if not Path(f'winmarket/{file.split('/')[8]}').exists():
                 continue
-
+            # the following code only runs if the file was successfully downloaded
             line1 = json.loads(next(bz2.open(Path(f'winmarket/{file.split('/')[8]}'), "rt")))
             date = line1['mc'][0]['marketDefinition']['marketTime'][:10]
             eventid = line1['mc'][0]['marketDefinition']['eventId']
@@ -116,3 +116,10 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
     except:
         print("Error writing JSON file")
         print(json_upload)
+
+wmdata = json.load(open(JSON_PATH,'r'))
+numraces = 0
+for key in wmdata.keys():
+    numraces += len(wmdata[key])
+
+print(numraces)
