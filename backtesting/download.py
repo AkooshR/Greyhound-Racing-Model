@@ -3,6 +3,7 @@ import os
 import bz2
 import json
 import pandas as pd
+import time
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -64,10 +65,26 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         for attempt in range(MAX_RETRIES):
             try:
                 trading.historic.download_file(file,"winmarket")
+                
+                # Verify the downloaded file is actually a valid bz2 file
+                file_path = Path(f'winmarket/{file.split('/')[8]}')
+                with open(file_path, 'rb') as f:
+                    magic = f.read(2)
+                    if magic != b'BZ':
+                        # Not a valid bz2 file, probably HTML error page
+                        raise ValueError(f"Downloaded file is not valid bz2 (got {magic})")
+                
                 break # Success, exit retry loop
             except Exception as e:
+                # Remove invalid file
+                try:
+                    os.remove(Path(f'winmarket/{file.split('/')[8]}'))
+                except:
+                    pass
+                    
                 if attempt < MAX_RETRIES - 1:
                     print(f"Attempt {attempt + 1}/{MAX_RETRIES} failed for (WIN) {file}: {e}")
+                    time.sleep(2)  # Wait before retrying
                 else:
                     print(f"Failed to download {file} after {MAX_RETRIES} attempts")
                 continue
@@ -76,7 +93,8 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         if not Path(f'winmarket/{file.split('/')[8]}').exists():
             continue
 
-        # the following code only runs if the file was successfully downloaded
+        # the following code only runs if the file was successfully downloaded\
+        time.sleep(0.5)
         line1 = json.loads(next(bz2.open(Path(f'winmarket/{file.split('/')[8]}'), "rt")))
         date = line1['mc'][0]['marketDefinition']['marketTime'][:10]
         eventid = line1['mc'][0]['marketDefinition']['eventId']
@@ -86,5 +104,7 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         race_length = line1['mc'][0]['marketDefinition']['name'].split()[1]
         os.remove(Path(f'winmarket/{file.split('/')[8]}'))
         json_upload.setdefault(eventid, []).append([date, race_length, runner_list])
+        print(f"✓ Successfully processed {file.split('/')[8]} - Event {eventid}")
+        print(json_upload)
         
     json.dump(json_upload,open(JSON_PATH,'w'),indent=4)

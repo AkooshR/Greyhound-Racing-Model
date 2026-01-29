@@ -32,6 +32,7 @@ def read_file(filepath,number_of_lines):
     line_number = 0
     date = ""
     commission = 0.0
+    eventid = ""
 
     # skip through until we reach the last `LINES_PROCESSED` lines
     while line_number < number_of_lines - LINES_PROCESSED:
@@ -57,7 +58,7 @@ def read_file(filepath,number_of_lines):
 
         line_number += 1
                 
-    return runner_details, runner_odds_dict, date, commission,eventid
+    return runner_details, runner_odds_dict, date, commission, eventid
 
 JSON_PATH = 'win_markets_may.json'
 for filepath in Path("backtestdata").iterdir():
@@ -74,6 +75,8 @@ for filepath in Path("backtestdata").iterdir():
               \n\tcommission: {commission:.2f} \n")
     json_file = json.load(open(JSON_PATH,'r'))
     for race in json_file[eventid]:
-        if race[0] == date and list(runner_details.keys())[0] in race[2] and list(runner_details.keys())[1] in race[2]:
+        date_matches = race[0] == date
+        runner_matches = list(runner_details.keys())[0] in race[2] and list(runner_details.keys())[1] in race[2]
+        if date_matches and runner_matches:
             distance = int(race[1][:-1])
             break
