@@ -1,5 +1,6 @@
 import betfairlightweight
 import os
+import time
 import bz2
 import json
 import pandas as pd
@@ -35,7 +36,7 @@ if input("Continue to download AvB files (type 'q'): ") == 'q':
         for attempt in range(MAX_RETRIES):
             try:
                 if not Path(f'backtestdata/{file.split('/')[8]}').exists():
-                    trading.historic.download_file(file,"backtestdata/windata")
+                    trading.historic.download_file(file,"backtestdata")
                 break  # Success, exit retry loop
             except Exception as e:
                 if attempt < MAX_RETRIES - 1:
@@ -64,6 +65,7 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         for attempt in range(MAX_RETRIES):
             try:
                 trading.historic.download_file(file,"winmarket")
+                time.sleep(2)
                 break # Success, exit retry loop
             except Exception as e:
                 if attempt < MAX_RETRIES - 1:
@@ -79,14 +81,19 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
             continue
 
         # the following code only runs if the file was successfully downloaded
-        line1 = json.loads(next(bz2.open(Path(f'winmarket/{file.split('/')[8]}'), "rt")))
-        date = line1['mc'][0]['marketDefinition']['marketTime'][:10]
-        eventid = line1['mc'][0]['marketDefinition']['eventId']
-        runner_list = []
-        for runner in line1['mc'][0]['marketDefinition']['runners']:
-            runner_list.append(runner['name'].split('.')[1].strip())
-        race_length = line1['mc'][0]['marketDefinition']['name'].split()[1]
-        os.remove(Path(f'winmarket/{file.split('/')[8]}'))
-        json_upload.setdefault(eventid, []).append([date, race_length, runner_list])
+        try:
+            line1 = json.loads(next(bz2.open(Path(f'winmarket/{file.split('/')[8]}'), "rt")))
+            date = line1['mc'][0]['marketDefinition']['marketTime'][:10]
+            eventid = line1['mc'][0]['marketDefinition']['eventId']
+            runner_list = []
+            for runner in line1['mc'][0]['marketDefinition']['runners']:
+                runner_list.append(runner['name'].split('.')[1].strip())
+            race_length = line1['mc'][0]['marketDefinition']['name'].split()[1]
+            os.remove(Path(f'winmarket/{file.split('/')[8]}'))
+            json_upload.setdefault(eventid, []).append([date, race_length, runner_list])
+            print(f"Processed file: winmarket/{file.split('/')[8]}")
+        except:
+            print(f"Error processing file: winmarket/{file.split('/')[8]}")
+            continue
         
     json.dump(json_upload,open(JSON_PATH,'w'),indent=4)
