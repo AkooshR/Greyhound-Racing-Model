@@ -2,6 +2,9 @@ import bz2
 import json
 import pandas as pd
 from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+import main as main
 
 # count the number of lines in this file
 def count_lines(filepath):
@@ -62,6 +65,7 @@ def read_file(filepath,number_of_lines):
 
 JSON_PATH = 'backtesting/win_markets_may.json'
 for filepath in Path("backtestdata").iterdir():
+    runner_names = []
     number_of_lines = count_lines(filepath)
     runner_details, runner_odds_dict, date, commission, eventid = read_file(filepath,number_of_lines)
     json_file = json.load(open(JSON_PATH,'r'))
@@ -75,9 +79,5 @@ for filepath in Path("backtestdata").iterdir():
         odds_list = runner_odds_dict[runner_details[runner][0]]
         mean_back = sum(odds_list) / len(odds_list)
         runner_details[runner].append(mean_back)
-        print(f"file: {filepath.name}, \
-              \n\tdate: {date} \
-              \n\trunner: {runner} \
-              \n\tstatus: {runner_details[runner][1]} \
-              \n\tmean available-to-back odds: {mean_back:.2f} \
-              \n\tcommission: {commission:.2f} \n")
+        runner_names.append(runner)
+    main.print_runner_analysis(runner_names[0],runner_names[1],distance,date)

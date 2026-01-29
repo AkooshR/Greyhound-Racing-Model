@@ -116,10 +116,3 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
     except:
         print("Error writing JSON file")
         print(json_upload)
-
-wmdata = json.load(open(JSON_PATH,'r'))
-numraces = 0
-for key in wmdata.keys():
-    numraces += len(wmdata[key])
-
-print(numraces)
