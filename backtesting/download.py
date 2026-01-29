@@ -63,8 +63,7 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         # this block attempts to download file
         for attempt in range(MAX_RETRIES):
             try:
-                if not Path(f'winmarket/{file.split('/')[8]}').exists():
-                    trading.historic.download_file(file,"winmarket")
+                trading.historic.download_file(file,"winmarket")
                 break # Success, exit retry loop
             except Exception as e:
                 if attempt < MAX_RETRIES - 1:
@@ -88,5 +87,5 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
         json_upload.setdefault(eventid, []).append([date, race_length, runner_list])
         print(json_upload)
         os.remove(Path(f'winmarket/{file.split('/')[8]}'))
-        
+
     json.dump(json_upload,open(JSON_PATH,'w'),indent=4)
