@@ -116,7 +116,6 @@ def print_runner_analysis(runner1_name, runner2_name, race_length, race_date):
 
     if table1.shape[0] in (0, 1) or table2.shape[0] in (0, 1):
         print("ERROR: Unable to retrieve data for one or both greyhounds.")
-        exit(1)
     else:
         runner1_params = fit_normal_dist(table1)
         runner2_params = fit_normal_dist(table2)

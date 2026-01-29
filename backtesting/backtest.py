@@ -2,6 +2,7 @@ import bz2
 import json
 import pandas as pd
 from pathlib import Path
+import main as main
 
 # count the number of lines in this file
 def count_lines(filepath):
@@ -31,6 +32,9 @@ def read_file(filepath,number_of_lines):
     file_handle = bz2.open(filepath, "rt")
     line_number = 0
 
+    date = ""
+    commission = 0.0
+
     # skip through until we reach the last `LINES_PROCESSED` lines
     while line_number < number_of_lines - LINES_PROCESSED:
         next(file_handle)
@@ -59,7 +63,16 @@ def read_file(filepath,number_of_lines):
 for filepath in Path("backtestdata").iterdir():
     number_of_lines = count_lines(filepath)
     runner_details, runner_odds_dict, date, commission = read_file(filepath,number_of_lines)
+    runner_names = []
     for runner in runner_details.keys():
+        runner_names.append(runner)
         odds_list = runner_odds_dict[runner_details[runner][0]]
         mean_back = sum(odds_list) / len(odds_list)
-        print(f'{runner} Back Odds: {mean_back:.2f}')
+        print(f"file: {filepath.name}, \
+              \n\tdate: {date} \
+              \n\trunner: {runner} \
+              \n\tstatus: {runner_details[runner][1]} \
+              \n\tmean available-to-back odds: {mean_back:.2f} \
+              \n\tcommission: {commission:.2f} \n")
+        
+        
