@@ -64,20 +64,20 @@ JSON_PATH = 'backtesting/win_markets_may.json'
 for filepath in Path("backtestdata").iterdir():
     number_of_lines = count_lines(filepath)
     runner_details, runner_odds_dict, date, commission, eventid = read_file(filepath,number_of_lines)
-    for runner in runner_details.keys():
-        odds_list = runner_odds_dict[runner_details[runner][0]]
-        mean_back = sum(odds_list) / len(odds_list)
-        print(f"file: {filepath.name}, \
-              \n\tdate: {date} \
-              \n\trunner: {runner} \
-              \n\tstatus: {runner_details[runner][1]} \
-              \n\tmean available-to-back odds: {mean_back:.2f} \
-              \n\tcommission: {commission:.2f} \n")
     json_file = json.load(open(JSON_PATH,'r'))
     for race in json_file[eventid]:
         date_matches = race[0] == date
         runners_match = list(runner_details.keys())[0] in race[2] and list(runner_details.keys())[1] in race[2]
         if date_matches and runners_match:
             distance = int(race[1][:-1])
-            print(f'race found, distance is {distance}')
             break
+    for runner in runner_details.keys():
+        odds_list = runner_odds_dict[runner_details[runner][0]]
+        mean_back = sum(odds_list) / len(odds_list)
+        runner_details[runner].append(mean_back)
+        print(f"file: {filepath.name}, \
+              \n\tdate: {date} \
+              \n\trunner: {runner} \
+              \n\tstatus: {runner_details[runner][1]} \
+              \n\tmean available-to-back odds: {mean_back:.2f} \
+              \n\tcommission: {commission:.2f} \n")
