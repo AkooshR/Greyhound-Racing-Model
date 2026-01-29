@@ -67,8 +67,9 @@ JSON_PATH = 'backtesting/win_markets_may.json'
 for filepath in Path("backtestdata").iterdir():
     runner_names = []
     number_of_lines = count_lines(filepath)
-    runner_details, runner_odds_dict, date, commission, eventid = read_file(filepath,number_of_lines)
+    runner_details, runner_odds_dict, date, commission, eventid = read_file(filepath, number_of_lines)
     json_file = json.load(open(JSON_PATH,'r'))
+    distance = 0
     for race in json_file[eventid]:
         date_matches = race[0] == date
         runners_match = list(runner_details.keys())[0] in race[2] and list(runner_details.keys())[1] in race[2]
@@ -76,8 +77,12 @@ for filepath in Path("backtestdata").iterdir():
             distance = int(race[1][:-1])
             break
     for runner in runner_details.keys():
-        odds_list = runner_odds_dict[runner_details[runner][0]]
-        mean_back = sum(odds_list) / len(odds_list)
+        runner_id = runner_details[runner][0]
+        back_odds_list = runner_odds_dict[runner_id] if runner_id in runner_odds_dict else []
+        if len(back_odds_list) == 0:
+            print(f"No valid odds data for runner {runner} in file {filepath.name}, skipping...")
+            continue
+        mean_back = sum(back_odds_list) / len(back_odds_list)
         runner_details[runner].append(mean_back)
         runner_names.append(runner)
-    main.print_runner_analysis(runner_names[0],runner_names[1],distance,date)
+    main.print_runner_analysis(runner_names[0], runner_names[1], distance, date)
