@@ -169,7 +169,13 @@ for race in market_catalogue:
 
     main.print_runner_analysis(runner1_name, runner2_name, race_length, race_date)
 
-    time.sleep(1)
+    user_wait = input("\nPress Enter to continue to next market, or type 'q' to quit: ")
+    if user_wait.lower() == 'q':
+        break
+    else:
+        print("Continuing to next market...")
+        time.sleep(1)
+        continue
 
 print("All done! Logging out...")
 trading.logout()

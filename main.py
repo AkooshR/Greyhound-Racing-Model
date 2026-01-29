@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 
+MIN_RACES = 5
 def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFrame:
     """
     Fetches racing data for a given greyhound from The Greyhound Recorder website.
@@ -15,7 +16,6 @@ def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFram
     - output : pd.DataFrame
         - DataFrame containing race data including 'Dist' and 'Time' columns, or None if data is insufficient
     """
-    MIN_RACES = 5
 
     formatted_name = runner_name.lower().replace(' ', '-').replace("'", "")
 
