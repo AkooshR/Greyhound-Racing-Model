@@ -58,7 +58,8 @@ win_list = trading.historic.get_file_list(
     event_name=None,
     market_types_collection='WIN'
 )
-
+json_upload = {}
+json_file = open('win_markets_may.json','w')
 for file in win_list:
     trading.historic.download_file(file,"winmarket")
     line1 = json.loads(next(bz2.open(Path(f'winmarket/{file.split('/')[8]}'), "rt")))
@@ -68,5 +69,8 @@ for file in win_list:
     for runner in line1['mc'][0]['marketDefinition']['runners']:
         runner_list.append(runner['name'].split('.')[1].strip())
     race_length = line1['mc'][0]['marketDefinition']['name'].split()[1]
-    print(date,eventid,runner_list,race_length)
+    json_upload.setdefault(eventid, []).append([date, race_length, runner_list])
+    print(json_upload)
     os.remove(Path(f'winmarket/{file.split('/')[8]}'))
+
+json.dump(json_upload,json_file,indent=4)
