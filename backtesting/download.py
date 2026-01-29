@@ -72,19 +72,23 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
                 
                 # Verify the downloaded file is actually a valid bz2 file
                 file_path = Path(f'winmarket/{file.split('/')[8]}')
+                is_valid_bz2 = False
                 with open(file_path, 'rb') as f:
                     magic = f.read(2)
-                    if magic != b'BZ':
-                        # Not a valid bz2 file, probably HTML error page
-                        os.remove(file_path)
-                        raise ValueError(f"Downloaded file is not valid bz2 (got {magic}), likely HTML error page")
+                    is_valid_bz2 = (magic == b'BZ')
+                
+                if not is_valid_bz2:
+                    # Not a valid bz2 file, probably HTML error page
+                    time.sleep(0.5)  # Give time for file handle to release
+                    os.remove(file_path)
+                    raise ValueError(f"Downloaded file is not valid bz2 (got {magic}), likely HTML error page")
                 
                 break # Success, exit retry loop
             except Exception as e:
                 if attempt < MAX_RETRIES - 1:
-                    print(f"Attempt {attempt + 1}/{MAX_RETRIES} failed for (WIN) {file}: {e}")
+                    print(f"\nAttempt {attempt + 1}/{MAX_RETRIES} failed for (WIN) {file}: {e}")
                 else:
-                    print(f"Failed to download {file} after {MAX_RETRIES} attempts")
+                    print(f"\nFailed to download {file} after {MAX_RETRIES} attempts")
                 continue
         
         # the following code only runs if the file was successfully downloaded
@@ -104,7 +108,7 @@ if input("Continue to generate win markets json file (type 'q'): ") == 'q':
             json_upload.setdefault(eventid, []).append([date, race_length, runner_list])
             print(f"\nProcessed file: winmarket/{file.split('/')[8]}")
         except:
-            print(f"Error processing file: winmarket/{file.split('/')[8]}")
+            print(f"\nError processing file: winmarket/{file.split('/')[8]}")
             continue
 
     try:
