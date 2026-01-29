@@ -43,5 +43,25 @@ if input("Continue to download files (type 'q'): ") == 'q':
                     print(f"Failed to download {file} after {MAX_RETRIES} attempts")
                 continue
 
+win_list = trading.historic.get_file_list(
+    sport='Greyhound Racing',
+    plan='Pro Plan',
+    from_day='1',
+    from_month='5',
+    from_year='2020',
+    to_day='31',
+    to_month='5',
+    to_year='2020',
+    market_types_collection='WIN'
+)
 
-trading.logout()
+for file in win_list:
+    trading.historic.download_file(file,"winmarket")
+    line1 = json.loads(next(bz2.open(Path(f'winmarket/{file.split('/')[8]}'), "rt")))
+    date = line1['mc'][0]['marketDefinition']['marketTime'][:10]
+    eventid = line1['mc'][0]['marketDefinition']['eventId']
+    runner_list = []
+    for runner in line1['mc'][0]['marketDefinition']['runners']:
+        runner_list.append(runner['name'].split('.')[1].strip())
+    race_length = line1['mc'][0]['marketDefinition']['name'].split()[1]
+    print(date,eventid,runner_list,race_length)

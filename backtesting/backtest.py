@@ -31,6 +31,8 @@ def read_file(filepath,number_of_lines):
 
     file_handle = bz2.open(filepath, "rt")
     line_number = 0
+    date = ""
+    commission = 0.0
 
     date = ""
     commission = 0.0
@@ -61,6 +63,7 @@ def read_file(filepath,number_of_lines):
     return runner_details, runner_odds_dict, date, commission
 
 for filepath in Path("backtestdata").iterdir():
+    print(filepath)
     number_of_lines = count_lines(filepath)
     runner_details, runner_odds_dict, date, commission = read_file(filepath,number_of_lines)
     runner_names = []
