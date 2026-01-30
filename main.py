@@ -22,7 +22,11 @@ def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFram
     url = f'https://www.thegreyhoundrecorder.com.au/greyhounds/{formatted_name}/'
 
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-    tables = pd.read_html(url, storage_options=headers)
+    try:
+        tables = pd.read_html(url, storage_options=headers)
+    except Exception as e:
+        print(f"WARNING: failed to fetch data for {runner_name} ({e})")
+        return pd.DataFrame(None)
 
     for table in tables:
         if 'Dist' in table.columns and 'Time' in table.columns:
@@ -31,6 +35,7 @@ def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFram
             table = table[table['Dist'] == race_length]
             if len(table) < MIN_RACES:
                 print(f"WARNING: less than {MIN_RACES} found!")
+                pass
             return table
     print(f"WARNING: no race data was found for {runner_name}!")
     return pd.DataFrame(None)
@@ -42,7 +47,7 @@ def fit_normal_dist(data: pd.DataFrame) -> tuple[float, float]:
     times = data['Time']
     return times.mean(), times.std()
 
-def simulate(runner1: tuple[float, float], runner2: tuple[float, float], n_simulations: int = 100000) -> tuple[float, float]:
+def simulate(runner1: tuple[float, float], runner2: tuple[float, float], n_simulations: int = 5000) -> tuple[float, float]:
     """
     Simulates `n_simulations` races between two greyhounds based on their normal distribution parameters.
 
@@ -101,7 +106,7 @@ def calculate_ev(fair_odds: float, offered_odds: float, commission: float = 0.08
 
     return effective_offered_odds / fair_odds - 1
 
-def print_runner_analysis(runner1_name, runner2_name, race_length, race_date):
+def runner_analysis(runner1_name, runner2_name, race_length, race_date) -> tuple[tuple[float, float], bool]:
     """
     Void function that prints out the model's predicted fair odds and win %, as well as
     the number of samples and mean time for each runner.
@@ -114,15 +119,18 @@ def print_runner_analysis(runner1_name, runner2_name, race_length, race_date):
     table1 = read_greyhound_data(runner1_name, race_length, race_date)
     table2 = read_greyhound_data(runner2_name, race_length, race_date)
 
+    fair_odds1, fair_odds2 = 0.0, 0.0
+
     if table1.shape[0] in (0, 1) or table2.shape[0] in (0, 1):
         print("ERROR: Unable to retrieve data for one or both greyhounds.")
+        pass
     else:
         runner1_params = fit_normal_dist(table1)
         runner2_params = fit_normal_dist(table2)
 
         prob_runner1, prob_runner2 = simulate(runner1_params, runner2_params)
-        fair_odds1 = 1 / prob_runner1 if prob_runner1 != 0 else None
-        fair_odds2 = 1 / prob_runner2 if prob_runner2 != 0 else None
+        fair_odds1 = 1 / prob_runner1 if prob_runner1 != 0 else 0.0
+        fair_odds2 = 1 / prob_runner2 if prob_runner2 != 0 else 0.0
 
         print(f"\n-----RESULTS-----")
 
@@ -138,7 +146,9 @@ def print_runner_analysis(runner1_name, runner2_name, race_length, race_date):
         print(f"\tNo. samples  : {len(table2)}")
         print(f"\tMean time    : {table2['Time'].mean():.2f} ")
 
+    return (fair_odds1, fair_odds2), (len(table1) >= 5 and len(table2) >= 5)
+
 if __name__ == "__main__":
     runner1_name, runner2_name, race_length, race_date = get_user_input()
 
-    print_runner_analysis(runner1_name, runner2_name, race_length, race_date)
+    runner_analysis(runner1_name, runner2_name, race_length, race_date)

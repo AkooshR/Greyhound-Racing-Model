@@ -167,7 +167,7 @@ for race in market_catalogue:
     runner1_name = formatted_names[0]
     runner2_name = formatted_names[1]
 
-    main.print_runner_analysis(runner1_name, runner2_name, race_length, race_date)
+    main.runner_analysis(runner1_name, runner2_name, race_length, race_date)
 
     user_wait = input("\nPress Enter to continue to next market, or type 'q' to quit: ")
     if user_wait.lower() == 'q':
