@@ -23,7 +23,7 @@ results: List[str] = []
 overrounds: List[float] = []
 commissions: List[float] = []
 
-BACKTEST_RESULTS_PATH = Path("backtestresult.csv")
+BACKTEST_RESULTS_PATH = Path("liveresults.csv")
 if BACKTEST_RESULTS_PATH.exists():
     with BACKTEST_RESULTS_PATH.open("r", newline="") as f:
         reader = csv.reader(f)
@@ -37,11 +37,11 @@ if BACKTEST_RESULTS_PATH.exists():
             offered_odds.append(float(row[1]))
             commissions.append(float(row[2]))
             results.append(row[3].strip())
-            overrounds.append(float(row[4]))
+#            overrounds.append(float(row[4]))
 
 # boost odds to account for overround
-for i, odds in enumerate(offered_odds):
-    offered_odds[i] = overrounds[i] / (1 / odds)
+#for i, odds in enumerate(offered_odds):
+#    offered_odds[i] = overrounds[i] / (1 / odds)
     
 def betting_p_value(
     offered_odds: List[float],
