@@ -136,6 +136,7 @@ def get_distance(race, win_catalogue):
     print(f"Distance for requested race not found!")
     return ""
 
+
 market_catalogue = get_next_races("MATCH_BET")
 win_catalogue = get_next_races("WIN") # only needed to find distances of races
 

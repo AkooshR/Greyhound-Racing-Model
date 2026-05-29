@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
+import requests
+from io import StringIO
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 MIN_RACES = 5
 def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFrame:
@@ -21,12 +25,42 @@ def read_greyhound_data(runner_name: str, race_length, race_date) -> pd.DataFram
 
     url = f'https://www.thegreyhoundrecorder.com.au/greyhounds/{formatted_name}/'
 
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    # Use a requests Session with retries and realistic browser headers
+    session = requests.Session()
+    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=(429, 500, 502, 503, 504), allowed_methods=("GET",))
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Connection': 'keep-alive',
+    }
+
     try:
-        tables = pd.read_html(url, storage_options=headers)
+        resp = session.get(url, headers=headers, timeout=10)
+        if resp.status_code == 403:
+            # Try cloudscraper fallback if available (handles some bot protections)
+            try:
+                import cloudscraper
+                scraper = cloudscraper.create_scraper()
+                resp = scraper.get(url, headers=headers, timeout=10)
+            except Exception:
+                pass
+
+        resp.raise_for_status()
+        tables = pd.read_html(StringIO(resp.text))
+    except requests.HTTPError as e:
+        status = getattr(e.response, 'status_code', 'N/A')
+        snippet = (e.response.text[:500] if getattr(e.response, 'text', None) else '')
+        print(f"WARNING: failed to fetch data for {runner_name} ({status} {e})")
+        if snippet:
+            print(f"Response snippet: {snippet!s}")
+        return pd.DataFrame()
     except Exception as e:
         print(f"WARNING: failed to fetch data for {runner_name} ({e})")
-        return pd.DataFrame(None)
+        return pd.DataFrame()
 
     for table in tables:
         if 'Dist' in table.columns and 'Time' in table.columns:
